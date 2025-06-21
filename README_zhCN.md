@@ -64,16 +64,58 @@
 ./can-bridge -can-ports can0,can1
 ```
 
+**设置端口**
+
+```bash
+./can-bridge -port 5260
+```
+
+**禁用自动设置（通过 API 手动管理）**
+
+```bash
+./can-bridge -auto-setup=false
+```
+
 **自定义比特率**
 
 ```bash
 ./can-bridge -can-ports can0 -bitrate 500000
 ```
 
-**禁用自动设置（通过API手动管理）**
+**采样点**
 
 ```bash
-./can-bridge -auto-setup=false
+./can-bridge -sample-point 0.875
+```
+
+**重启超时**
+
+```bash
+./can-bridge -restart-ms 100
+```
+
+**重试次数**
+
+```bash
+./can-bridge -setup-retry 3
+```
+
+**启用服务发现**
+
+```bash
+./can-bridge -enable-finder=true
+```
+
+**服务发现间隔**
+
+```bash
+./can-bridge -finder-interval 5
+```
+
+**启用健康检查**
+
+```bash
+./can-bridge -enable-healthcheck=true
 ```
 
 **通过 API 设置接口**
@@ -84,31 +126,71 @@ curl -X POST localhost:5260/api/setup/interfaces/can0 \
   -d '{"bitrate": 500000, "withRetry": true}'
 ```
 
-## 🌐API 文档
+## 🌐 API 文档
 
-### 📍基础路径
+### 📍 基础路径
 
 `http://localhost:5260/api`
 
-### 🔁新增接口设置管理 API
+### ⭐ 状态与监控
+
+用于获取系统、接口的状态、健康信息和性能指标。
+
+- `GET /api/status`: 获取完整的系统状态，包括正常运行时间、看门狗状态和所有接口的详细信息。
+- `GET /api/interfaces`: 获取已配置和活动的接口列表。
+- `GET /api/interfaces/:name/status`: 获取指定接口的详细状态。
+- `GET /api/health`: 获取系统健康状况摘要。
+- `GET /api/metrics`: 获取用于外部监控系统（如 Prometheus）的详细指标。
+
+### ✉️ 消息发送
+
+- `POST /api/can`: 发送一条 CAN 消息。请求体需要包含 CAN 消息的详细信息（如 ID, Data 等）。
+
+### 🔧 接口设置管理 
+
+用于动态配置、启动、停止和管理 CAN 接口。
 
 **配置管理**：
 
-* `GET /api/setup/config`
-* `PUT /api/setup/config`
+- `GET /api/setup/config`: 获取当前的接口设置配置（如默认比特率、采样点等）。
+- `PUT /api/setup/config`: 更新接口设置的全局配置。
 
-**接口操作**：
+**单个接口操作**：
 
-* `GET /api/setup/available`
-* `POST /api/setup/interfaces/{name}`
-* `DELETE /api/setup/interfaces/{name}`
-* `POST /api/setup/interfaces/{name}/reset`
-* `GET /api/setup/interfaces/{name}/state`
+- `GET /api/setup/available`: 获取操作系统上所有可用的 CAN 接口列表。
+- `POST /api/setup/interfaces/{name}`: 根据配置设置并启动指定的 CAN 接口。
+- `DELETE /api/setup/interfaces/{name}`: 关闭并拆除指定的 CAN 接口。
+- `POST /api/setup/interfaces/{name}/reset`: 重置（先关闭再启动）指定的 CAN 接口。
+- `GET /api/setup/interfaces/{name}/state`: 获取指定接口的当前状态（是否已设置、配置详情等）。
 
-**批量操作**：
+**批量接口操作**：
 
-* `POST /api/setup/interfaces/setup-all`
-* `POST /api/setup/interfaces/teardown-all`
+- `POST /api/setup/interfaces/setup-all`: 批量设置所有已配置的或请求中指定的接口。
+- `POST /api/setup/interfaces/teardown-all`: 批量关闭并拆除所有已配置的接口。
+
+### 📡 消息监听与获取
+
+用于从 CAN 总线上实时捕获、查看和管理消息。
+
+**监听控制**：
+
+- `POST /api/messages/:interface/listen/start`: 在指定接口上开始监听 CAN 消息。
+- `POST /api/messages/:interface/listen/stop`: 在指定接口上停止监听 CAN 消息。
+- `GET /api/messages/:interface/listen/status`: 获取指定接口的当前监听状态。
+- `GET /api/messages/listen/status`: 获取所有接口的监听状态汇总。
+
+**消息获取**：
+
+- `GET /api/messages/:interface`: 获取指定接口已缓存的所有消息。支持通过 `id` 参数进行过滤。
+- `GET /api/messages/:interface/recent`: 获取指定接口最近收到的 N 条消息（可通过 `count` 参数指定数量）。
+- `GET /api/messages`: 以接口为单位，获取所有接口缓存的所有消息。
+
+**消息管理与统计**：
+
+- `GET /api/messages/:interface/statistics`: 获取指定接口的消息统计信息（如接收总数、错误数等）。
+- `DELETE /api/messages/:interface`: 清除指定接口的消息缓存。
+- `GET /api/messages/statistics`: 获取所有接口的全局消息统计信息。
+- `DELETE /api/messages`: 清除所有接口的消息缓存。
 
 ## 🚀性能优化与稳定性
 

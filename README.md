@@ -64,16 +64,64 @@ For detailed installation instructions, see the [Installation Guide](docs/instal
 ./can-bridge -can-ports can0,can1
 ```
 
-**Custom Bitrate**
+**Set Port**
 
 ```bash
-./can-bridge -can-ports can0 -bitrate 500000
+./can-bridge -port 5260
 ```
 
 **Disable Automatic Setup (Managed via API)**
 
 ```bash
 ./can-bridge -auto-setup=false
+```
+
+**Custom Bitrate**
+
+```bash
+./can-bridge -can-ports can0 -bitrate 500000
+```
+
+**Sample Point**
+
+```bash
+./can-bridge -sample-point 0.75
+```
+
+**Restart Timeout**
+
+```bash
+./can-bridge -restart-ms 100
+```
+
+**Setup Retry**
+
+```bash
+./can-bridge -setup-retry 3
+```
+
+**Setup Delay**
+
+```bash
+./can-bridge -setup-delay 2
+```
+
+**Enable Service Finder**
+
+```bash
+./can-bridge -enable-finder=true
+```
+
+**Service Finder Interval**
+
+```bash
+./can-bridge -finder-interval 5
+```
+
+**Enable Health Check**
+
+```bash
+./can-bridge -enable-healthcheck=true
 ```
 
 **Configure Interface via API**
@@ -90,25 +138,65 @@ curl -X POST localhost:5260/api/setup/interfaces/can0 \
 
 `http://localhost:5260/api`
 
-### 🔁New Interface Setup Management API
+### ⭐ Status & Monitoring
+
+APIs for retrieving system status, interface health, and performance metrics.
+
+* `GET /api/status`: Get the complete system status, including uptime, watchdog status, and all interface details.
+* `GET /api/interfaces`: Get a list of configured and active interfaces.
+* `GET /api/interfaces/:name/status`: Get the detailed status for a specific interface.
+* `GET /api/health`: Get a summary of the system's health.
+* `GET /api/metrics`: Get detailed metrics formatted for external monitoring systems (e.g., Prometheus).
+
+### ✉️ Message Sending
+
+* `POST /api/can`: Send a single CAN message. The request body should contain the message details (e.g., ID, Data).
+
+### 🔧 Interface Setup Management
+
+APIs for dynamically configuring, starting, stopping, and managing CAN interfaces.
 
 **Configuration Management**:
 
-* `GET /api/setup/config`
-* `PUT /api/setup/config`
+* `GET /api/setup/config`: Get the current interface setup configuration (e.g., default bitrate, sample point).
+* `PUT /api/setup/config`: Update the global configuration for interface setup.
 
 **Interface Operations**:
 
-* `GET /api/setup/available`
-* `POST /api/setup/interfaces/{name}`
-* `DELETE /api/setup/interfaces/{name}`
-* `POST /api/setup/interfaces/{name}/reset`
-* `GET /api/setup/interfaces/{name}/state`
+* `GET /api/setup/available`: Get a list of all available CAN interfaces on the operating system.
+* `POST /api/setup/interfaces/{name}`: Set up and bring up a specific CAN interface based on the configuration.
+* `DELETE /api/setup/interfaces/{name}`: Bring down and tear down a specific CAN interface.
+* `POST /api/setup/interfaces/{name}/reset`: Reset a specific CAN interface (teardown and then setup).
+* `GET /api/setup/interfaces/{name}/state`: Get the current setup state of a specific interface (e.g., if it is up, config details).
 
 **Batch Operations**:
 
-* `POST /api/setup/interfaces/setup-all`
-* `POST /api/setup/interfaces/teardown-all`
+* `POST /api/setup/interfaces/setup-all`: Set up all configured interfaces or a specific list of interfaces from the request.
+* `POST /api/setup/interfaces/teardown-all`: Tear down all configured interfaces.
+
+### 📡 Message Listening & Retrieval
+
+APIs for capturing, viewing, and managing messages from the CAN bus in real-time.
+
+**Listener Control**:
+
+* `POST /api/messages/:interface/listen/start`: Start listening for CAN messages on a specific interface.
+* `POST /api/messages/:interface/listen/stop`: Stop listening for CAN messages on a specific interface.
+* `GET /api/messages/:interface/listen/status`: Get the current listening status for a specific interface.
+* `GET /api/messages/listen/status`: Get a summary of the listening status for all interfaces.
+
+**Message Retrieval**:
+
+* `GET /api/messages/:interface`: Get all cached messages for a specific interface. Supports filtering by `id` query parameter.
+* `GET /api/messages/:interface/recent`: Get the N most recent messages from an interface (specify with the `count` query parameter).
+* `GET /api/messages/`: Get all cached messages from all interfaces, grouped by interface.
+
+**Message Management & Statistics**:
+
+* `GET /api/messages/:interface/statistics`: Get message statistics for a specific interface (total received, errors, etc.).
+* `DELETE /api/messages/:interface`: Clear the message buffer for a specific interface.
+* `GET /api/messages/statistics`: Get global message statistics for all interfaces.
+* `DELETE /api/messages/`: Clear the message buffers for all interfaces.
 
 ## 🚀Performance Optimization and Stability
 
